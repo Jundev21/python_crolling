@@ -1,0 +1,413 @@
+import re
+import os
+
+import xlwings as xw
+from openpyxl.reader.excel import load_workbook
+from selenium import webdriver
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver import Keys
+import time
+import argparse
+from bs4 import BeautifulSoup
+from typing import Dict, List, Optional
+from datetime import datetime, timedelta
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from selenium.webdriver.support.wait import WebDriverWait
+
+
+from config import region_config
+from util import login
+from util.days_loading_check import days_loading_check
+from util.scroll_loading_check import scroll_loading_check, scroll_to_bottom
+
+TARGETS_CONFIG = [
+    {
+        "panel_id": "4",
+        "panel_name": "CPU Usage",
+    },
+    {
+        "panel_id": "6",
+        "panel_name": "Memory Usage",
+    }
+]
+
+STATUS_THRESHOLD = 70.0
+
+# respost 저장 폴더
+OUTPUT_DIR = ""
+
+# CONFIG
+TARGETS_CONFIG = [
+    {
+        "panel_id": "4",
+        "panel_name": "CPU Usage",
+        "identifiers": [
+            "gss-interface",
+            "gss-place-google",
+            "gss-place-here",
+            "gss-api-mcp",
+            "gss-api-mmi"
+        ]
+    },
+    {
+        "panel_id": "6",
+        "panel_name": "Memory Usage",
+        "identifiers": [
+            "gss-interface",
+            "gss-place-google",
+            "gss-place-here",
+            "gss-api-mcp",
+            "gss-api-mmi"
+        ]
+    }
+]
+
+
+
+def _clean_text_to_float(text: str) -> Optional[float]:
+    if not text:
+        return None
+    match = re.search(r'[\d.]+', text)
+    if match:
+        return float(match.group())
+    return None
+
+
+def _get_header_map(table_element: BeautifulSoup) -> Dict[str, int]:
+    header_map = {}
+    headers = table_element.find_all('th')
+
+    for i, th in enumerate(headers):
+        text = th.get_text(strip=True).lower()
+        title = (th.get('title') or "").lower()
+
+        if 'min' in text or 'minimum' in title:
+            header_map['min'] = i
+        elif 'max' in text or 'maximum' in title:
+            header_map['max'] = i
+        elif 'mean' in text or 'avg' in text or 'average' in title:
+            header_map['avg'] = i
+
+    return header_map
+
+
+def parse_panel_for_all_services(get_html, panel_id: str, service_identifiers: List[str]) -> Dict[str, Dict[str, float]]:
+    final_results = {}
+
+    soup = BeautifulSoup(get_html, 'lxml')
+
+    if not (panel := soup.find('div', attrs={'data-panelid': panel_id})): return final_results
+    if not (table := panel.find('table')): return final_results
+    if not all(k in (header_map := _get_header_map(table)) for k in ['min', 'max', 'avg']): return final_results
+
+    for identifier in service_identifiers:
+        data = _extract_data_for_identifier(table, header_map, identifier)
+        if data["min_values"]:
+            final_results[identifier] = {
+                "min": min(data["min_values"]),
+                "max": max(data["max_values"]),
+                "avg": sum(data["avg_values"]) / len(data["avg_values"])
+            }
+    return final_results
+
+    
+
+def _extract_data_for_identifier(table_element: BeautifulSoup, header_map: Dict[str, int], row_identifier: str) -> Dict[str, List[float]]:
+
+    collected_data = {"min_values": [], "max_values": [], "avg_values": []}
+    tbody = table_element.find('tbody')
+    if not tbody:
+        return collected_data
+        
+    rows = tbody.find_all('tr')
+    for row in rows:
+        button = row.find('button', title=lambda t: t and t.startswith(row_identifier))
+        if not button:
+            continue
+
+        cells = row.find_all('td')
+        try:
+            min_val = _clean_text_to_float(cells[header_map['min']].get_text())
+            max_val = _clean_text_to_float(cells[header_map['max']].get_text())
+            avg_val = _clean_text_to_float(cells[header_map['avg']].get_text())
+
+            if all(v is not None for v in [min_val, max_val, avg_val]):
+                collected_data["min_values"].append(min_val)
+                collected_data["max_values"].append(max_val)
+                collected_data["avg_values"].append(avg_val)
+
+        except (IndexError, AttributeError, KeyError):
+            # 오류가 있는 행은 건너뜀
+            continue
+            
+    return collected_data
+
+def parse_panel_for_multiple_targets(file_path: str, panel_id: str, identifiers: List[str]) -> Dict[str, Dict[str, float]]:
+
+    final_results = {}
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            soup = BeautifulSoup(f.read(), 'lxml')
+    except FileNotFoundError:
+        print(f"❌ 오류: '{file_path}' 파일을 찾을 수 없습니다.")
+        return final_results
+
+    panel = soup.find('div', attrs={'data-panelid': panel_id})
+    if not panel:
+        print(f"❌ 오류: data-panelid='{panel_id}'인 패널을 찾을 수 없습니다.")
+        return final_results
+
+    table = panel.find('table')
+    if not table:
+        print(f"❌ 오류: 패널 ID '{panel_id}' 내에서 <table>을 찾을 수 없습니다.")
+        return final_results
+
+    header_map = _get_header_map(table)
+    if not all(k in header_map for k in ['min', 'max', 'avg']):
+        print(f"❌ 오류: 테이블에서 Min, Max, Mean/Avg 헤더를 모두 찾을 수 없습니다.")
+        return final_results
+    
+    print(f"✅ 패널(ID: {panel_id}) 및 테이블 분석 완료. 데이터 추출을 시작합니다.\n")
+    
+    # 설정된 모든 식별자에 대해 반복 작업 수행
+    for identifier in identifiers:
+        data = _extract_data_for_identifier(table, header_map, identifier)
+        
+        if not data["min_values"]:
+            continue
+
+        # 데이터가 있으면 최종 계산 수행
+        calculated = {
+            "min": min(data["min_values"]),
+            "max": max(data["max_values"]),
+            "avg": round(sum(data["avg_values"]) / len(data["avg_values"]))
+        }
+        final_results[identifier] = calculated
+        
+    return final_results
+
+
+
+def create_horizontal_excel_report(all_results: Dict[str, Dict], filename: str, header_names, index, day_header):
+
+    full_path = os.path.join(OUTPUT_DIR, filename)
+
+    if os.path.exists(full_path):
+        print("exist file")
+        return
+    else:
+        wb = openpyxl.Workbook()
+
+    ws = wb.active
+    ws.title = "Daily Check Report"
+
+    # --- 스타일 정의 ---
+    bold_font = Font(bold=True, name='Calibri', size=11)
+    center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    pass_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+    fail_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+    ws['B2'] = f"CPU Over usage({STATUS_THRESHOLD}%) is fail / Memory : Memory Over usage ({STATUS_THRESHOLD}%) is fail"
+    ws['B2'].font = Font(bold=True, size=12)
+
+
+    # B3~B5 셀 병합 및 'Date' 텍스트 설정
+    ws.merge_cells('B3:B5')
+    date_header_cell = ws['B3']
+    date_header_cell.value = "Date"
+    date_header_cell.font = bold_font
+    date_header_cell.alignment = center_align
+
+    # --- 동적 헤더 및 데이터 생성 ---
+    start_col = 3
+    data_row = 6+index
+
+
+
+    for display_name, internal_name in header_names.items():
+        block_end_col = start_col + 9
+        cpu_start_col, cpu_end_col = start_col, start_col + 4
+        mem_start_col, mem_end_col = start_col + 5, start_col + 9
+
+        ws.merge_cells(start_row=3, start_column=start_col, end_row=3, end_column=block_end_col)
+        cell = ws.cell(row=3, column=start_col, value=display_name)
+        cell.font = Font(bold=True, size=12)
+        cell.alignment = center_align
+
+        ws.merge_cells(start_row=4, start_column=cpu_start_col, end_row=4, end_column=cpu_end_col)
+        cell = ws.cell(row=4, column=cpu_start_col, value="CPU Usage")
+        cell.font = bold_font
+        cell.alignment = center_align
+
+        ws.merge_cells(start_row=4, start_column=mem_start_col, end_row=4, end_column=mem_end_col)
+        cell = ws.cell(row=4, column=mem_start_col, value="Memory Usage")
+        cell.font = bold_font
+        cell.alignment = center_align
+
+
+        detailed_headers = ["Min\n(%)", "Max\n(%)", "Avg\n(%)", "Status\n(Pass/Fail)", "Special Note"]
+
+        for i, header in enumerate(detailed_headers * 2):
+            cell = ws.cell(row=5, column=start_col + i, value=header)
+            cell.font = bold_font
+            cell.alignment = center_align
+
+        cpu_data = all_results.get("CPU Usage", {}).get(internal_name, {})
+
+        if cpu_data:
+            ws.cell(row=data_row, column=cpu_start_col, value=round(cpu_data.get('min', 0), 3))
+            ws.cell(row=data_row, column=cpu_start_col + 1, value=round(cpu_data.get('max', 0), 3))
+            ws.cell(row=data_row, column=cpu_start_col + 2, value=round(cpu_data.get('avg', 0), 3))
+            status_cell = ws.cell(row=data_row, column=cpu_start_col + 3)
+
+            if cpu_data.get('max', 0) > STATUS_THRESHOLD:
+                status_cell.value, status_cell.fill = "Fail", fail_fill
+            else:
+                status_cell.value, status_cell.fill = "Pass", pass_fill
+
+            ws.cell(row=data_row, column=cpu_start_col + 4, value="이상없음")
+
+        mem_data = all_results.get("Memory Usage", {}).get(internal_name, {})
+
+        if mem_data:
+            ws.cell(row=data_row, column=mem_start_col, value=round(mem_data.get('min', 0), 3))
+            ws.cell(row=data_row, column=mem_start_col + 1, value=round(mem_data.get('max', 0), 3))
+            ws.cell(row=data_row, column=mem_start_col + 2, value=round(mem_data.get('avg', 0), 3))
+            status_cell = ws.cell(row=data_row, column=mem_start_col + 3)
+
+            if mem_data.get('max', 0) > STATUS_THRESHOLD:
+                status_cell.value, status_cell.fill = "Fail", fail_fill
+            else:
+                status_cell.value, status_cell.fill = "Pass", pass_fill
+
+            ws.cell(row=data_row, column=mem_start_col + 4, value="이상없음")
+
+        start_col = block_end_col + 1
+
+
+    # B6 행에 실제 날짜
+    date_value_cell = ws.cell(row=data_row, column=2, value=day_header[0:10])
+    date_value_cell.font = bold_font
+    date_value_cell.alignment = center_align
+
+
+
+    # --- 최종 스타일 ---
+    for col in range(2, start_col):
+        ws.column_dimensions[get_column_letter(col)].width = 15
+        for row in range(3, data_row + 1):
+            ws.cell(row, col).border = thin_border
+    ws.column_dimensions['B'].width = 12
+
+
+    wb.save(full_path)
+
+    print(f"\n✅ 엑셀 보고서가 성공적으로 생성되었습니다: {full_path}")
+
+
+def main(research_days, args):
+    global OUTPUT_DIR
+    chrome_options = Options()
+    driver = webdriver.Chrome(options=chrome_options)
+
+    try:
+        for idx, region in enumerate(region_config.region_config):
+            driver.get(region['url'])
+            driver.set_window_size(1200, 1000)
+
+            driver.find_element(By.XPATH, '//*[@id="pageContent"]/div[3]/div/div/div/div[2]/div/div[2]/a').click()
+
+            if idx == 0:
+                driver.find_element(By.ID, 'username').send_keys('9502701')
+                driver.find_element(By.ID, 'password').send_keys('Acro@0720' + Keys.RETURN)
+
+
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[1]/div/header/div[2]/div[2]/div[3]/div[4]/div[1]/button[1]'))
+            )
+
+            calendar = driver.find_element(By.XPATH,'/html/body/div[1]/div[1]/div/header/div[2]/div[2]/div[3]/div[4]/div[1]/button[1]')
+
+            for index, day in enumerate(research_days):
+                    calendar.click()
+                    input_from_date = driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div/header/div[2]/div[2]/div[3]/div[4]/div[1]/div/section/div/div[1]/div[2]/div[1]/div[2]/div[1]/div[1]/div[2]/div/div/div[1]/input')
+                    input_from_date.clear()
+                    input_from_date.send_keys(day["from_yesterday_data"])
+                    input_to_date= driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div/header/div[2]/div[2]/div[3]/div[4]/div[1]/div/section/div/div[1]/div[2]/div[1]/div[2]/div[2]/div[1]/div[2]/div/div/div[1]/input')
+                    input_to_date.clear()
+                    input_to_date.send_keys(day["to_yesterday_data"])
+
+                    driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div/header/div[2]/div[2]/div[3]/div[4]/div[1]/div/section/div/div[1]/div[2]/div[1]/div[2]/div[3]/button[3]').click()
+
+                    scroll_container = driver.find_element(By.CSS_SELECTOR, "#page-scrollbar")
+
+                    driver.execute_script("arguments[0].scrollTop = arguments[1]", scroll_container,500)
+
+
+                    WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[1]/div/div[1]/div/main/div[3]/div/div/div/div/div/div/div[8]/div/section/div[3]/div/div[2]/div/div[1]/table')),
+                    )
+
+                    WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH,
+                                                        '/html/body/div[1]/div[1]/div/div[1]/div/main/div[3]/div/div/div/div/div/div/div[9]/div/section/div[3]/div/div[2]/div/div[1]/table'))
+                    )
+
+                    time.sleep(5)
+
+                    get_html = driver.page_source
+                    all_panel_results = {}
+                    service_identifiers_to_parse = list(region['header_name'].values())
+
+                    for target_config in TARGETS_CONFIG:
+                        panel_id = target_config["panel_id"]
+                        panel_name = target_config["panel_name"]
+
+                        print(f"\n>>>>>> '{panel_name}' (Panel ID: {panel_id}) 분석 시작 >>>>>>")
+                        results = parse_panel_for_all_services(get_html, panel_id, service_identifiers_to_parse)
+                        if results:
+                            all_panel_results[panel_name] = results
+                            print(f"'{panel_name}'에서 {len(results)}개 서비스 데이터 추출 완료.")
+                        else:
+                            print(f"'{panel_name}'에서 분석할 데이터를 찾지 못했습니다.")
+
+                    if not all_panel_results:
+                        print("\nℹ️ 최종적으로 분석할 데이터가 없습니다.")
+                    else:
+                        yesterday = datetime.today()-timedelta(days=1)
+                        report_filename = f"{region["region"]}_Daily_Check_{yesterday.strftime('%Y%m%d')}.xlsx"
+
+                        if args.peak_time :
+                            report_filename = f"{args.peak_type}_peak_time_" + report_filename
+                            OUTPUT_DIR =  "reports/" + args.peak_type + "_Peak_Time"
+                        else:
+                            OUTPUT_DIR = "reports/" + region["region"]
+
+                        create_horizontal_excel_report(all_panel_results, report_filename,region['header_name'],index+1, day["from_yesterday_data"])
+
+
+    except Exception as e:
+        print("\n======================================================")
+        print(f"[CRITICAL ERROR] 스크립트 실행 중 치명적인 오류가 발생했습니다.")
+        print(f"오류 내용: {e}")
+        import traceback
+        traceback.print_exc()
+        print("======================================================")
+
+    finally:
+        print("\n모든 작업이 완료되었습니다.")
+        input("엔터 키를 누르면 창이 닫힙니다...")
+
+# --- 메인 실행 블록 ---
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--peak_time", required=False, help="Is it peak time")
+    parser.add_argument("--peak_type", required=False, help="Is it AM or PM")
+    args = parser.parse_args()
+    research_day = days_loading_check(1,args)
+    main(research_day,args)
