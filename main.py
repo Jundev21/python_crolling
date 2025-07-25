@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from excel import append_to_exisiting_excel_report
 from selenium.webdriver import Keys
 import time
 import argparse
@@ -198,7 +199,7 @@ def create_horizontal_excel_report(all_results: Dict[str, Dict], filename: str, 
     full_path = os.path.join(OUTPUT_DIR, filename)
 
     if os.path.exists(full_path):
-        print("exist file")
+        append_to_exisiting_excel_report.main()
         return
     else:
         wb = openpyxl.Workbook()
