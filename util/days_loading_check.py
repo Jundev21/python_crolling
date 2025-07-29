@@ -22,7 +22,7 @@ def days_loading_check(days,args):
             print(f"피크타임 시간대 {pick_time_PM} { args.peak_type}")
     else:
         print("일반 일일점검 검색 시작")
-    for day in range(days+1, 1, -1):
+    for day in range(days, 0, -1):
         from_yesterday_data = ""
         to_yesterday_data = ""
         change_day = current_data-timedelta(day)

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="09ceaed4-8d90-4281-835b-6b3a9074a4c2" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/parsing-py.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.exe" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/reports/AM_Peak_Time/AM_peak_time_EU_Daily_Check_20250724.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/reports/AM_Peak_Time/AM_peak_time_GLOBAL_Daily_Check_20250724.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/reports/AM_Peak_Time/AM_peak_time_NA_Daily_Check_20250724.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/reports/EU/EU_Daily_Check_20250724.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/reports/GLOBAL/GLOBAL_Daily_Check_20250724.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/reports/NA/NA_Daily_Check_20250724.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/reports/PM_Peak_Time/PM_peak_time_EU_Daily_Check_20250724.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/reports/PM_Peak_Time/PM_peak_time_GLOBAL_Daily_Check_20250724.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/reports/PM_Peak_Time/PM_peak_time_NA_Daily_Check_20250724.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/util/days_loading_check.py" beforeDir="false" afterPath="$PROJECT_DIR$/util/days_loading_check.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Jinu0827&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://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@github.com/Jundev21/python_crolling.git&quot;,
+    &quot;accountId&quot;: &quot;bfd7d625-2ebc-4e19-a948-a3f4901675c5&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 1
+}</component>
+  <component name="ProjectId" id="30TyEhbsreh3jzc6wzfgmpaT4Y0" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;
+  }
+}</component>
+  <component name="RunManager">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="parsing-py-update-v3" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
+      <option name="PARAMETERS" value="--peak_time True --peak_type AM" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.main" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-657d8234b839-64d779b69b7a-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-251.26927.74" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="09ceaed4-8d90-4281-835b-6b3a9074a4c2" name="Changes" comment="" />
+      <created>1753665750079</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1753665750079</updated>
+    </task>
+    <servers />
+  </component>
+</project>

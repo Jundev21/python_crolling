@@ -199,8 +199,9 @@ def create_horizontal_excel_report(all_results: Dict[str, Dict], filename: str, 
     full_path = os.path.join(OUTPUT_DIR, filename)
 
     if os.path.exists(full_path):
-        append_to_exisiting_excel_report.main()
-        return
+        wb = load_workbook(full_path)
+        # append_to_exisiting_excel_report.main()
+        # return
     else:
         wb = openpyxl.Workbook()
 
@@ -410,5 +411,5 @@ if __name__ == "__main__":
     parser.add_argument("--peak_time", required=False, help="Is it peak time")
     parser.add_argument("--peak_type", required=False, help="Is it AM or PM")
     args = parser.parse_args()
-    research_day = days_loading_check(1,args)
+    research_day = days_loading_check(3,args)
     main(research_day,args)
