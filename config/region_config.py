@@ -1,5 +1,4 @@
 region_config =[
-
     {
         "region": "EU",
         "url": "https://grafana.eu.ccos.cloud/d/de8u066pqh1j4f/gss-prd-eu?orgId=2",
