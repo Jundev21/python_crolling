@@ -1,7 +1,6 @@
 import re
 import os
-
-import xlwings as xw
+from dotenv import load_dotenv
 from openpyxl.reader.excel import load_workbook
 from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC
@@ -208,6 +207,9 @@ def main(research_days, args):
     chrome_options = Options()
     driver = webdriver.Chrome(options=chrome_options)
     is_peak_time = args.peak_time
+    load_dotenv()
+    user_name = os.getenv("USERNAME")
+    user_password = os.getenv("PASSWORD")
 
     try:
         for idx, region in enumerate(region_config.region_config):
@@ -217,8 +219,8 @@ def main(research_days, args):
             driver.find_element(By.XPATH, '//*[@id="pageContent"]/div[3]/div/div/div/div[2]/div/div[2]/a').click()
 
             if idx == 0:
-                driver.find_element(By.ID, 'username').send_keys('9502701')
-                driver.find_element(By.ID, 'password').send_keys('Acro@0720' + Keys.RETURN)
+                driver.find_element(By.ID, 'username').send_keys(user_name)
+                driver.find_element(By.ID, 'password').send_keys(user_password + Keys.RETURN)
 
 
             WebDriverWait(driver, 10).until(
