@@ -197,11 +197,10 @@ def create_horizontal_excel_report(all_results: Dict[str, Dict], filename: str, 
 
     if is_peak_time:
         new_excel_report.main(os.path.join(OUTPUT_DIR, filename),all_results,header_names,index,day_header)
-        return
     elif os.path.exists(full_path):
         append_to_exisiting_excel_report.main(full_path, all_results, header_names ,index, day_header)
     else:
-        new_excel_report.main(full_path, all_results, header_names ,index, day_header)
+        new_excel_report.main(os.path.join(OUTPUT_DIR, filename), all_results, header_names ,index, day_header)
 
 
 def main(research_days, args):
