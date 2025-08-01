@@ -186,7 +186,7 @@ def parse_panel_for_multiple_targets(file_path: str, panel_id: str, identifiers:
         
     return final_results
 
-def create_horizontal_excel_report(all_results: Dict[str, Dict], filename: str, header_names, index, day_header):
+def create_horizontal_excel_report(all_results: Dict[str, Dict], filename: str, header_names, index, day_header, is_peak_time):
 
     yesterday = datetime.today()
     report_folder = yesterday.strftime("%m%d")
@@ -195,7 +195,10 @@ def create_horizontal_excel_report(all_results: Dict[str, Dict], filename: str, 
     a = os.path.join(BASE_DIR, report_folder)
     full_path = os.path.join(a, filename)
 
-    if os.path.exists(full_path):
+    if is_peak_time:
+        new_excel_report.main(os.path.join(OUTPUT_DIR, filename),all_results,header_names,index,day_header)
+        return
+    elif os.path.exists(full_path):
         append_to_exisiting_excel_report.main(full_path, all_results, header_names ,index, day_header)
     else:
         new_excel_report.main(full_path, all_results, header_names ,index, day_header)
@@ -205,6 +208,7 @@ def main(research_days, args):
     global OUTPUT_DIR
     chrome_options = Options()
     driver = webdriver.Chrome(options=chrome_options)
+    is_peak_time = args.peak_time
 
     try:
         for idx, region in enumerate(region_config.region_config):
@@ -279,7 +283,7 @@ def main(research_days, args):
                         else:
                             OUTPUT_DIR = "reports/" + region["region"]
 
-                        create_horizontal_excel_report(all_panel_results, report_filename,region['header_name'],index+1, day["from_yesterday_data"])
+                        create_horizontal_excel_report(all_panel_results, report_filename,region['header_name'],index+1, day["from_yesterday_data"], is_peak_time)
 
     except Exception as e:
         print("\n======================================================")
@@ -299,6 +303,6 @@ if __name__ == "__main__":
     parser.add_argument("--peak_time", required=False, help="Is it peak time")
     parser.add_argument("--peak_type", required=False, help="Is it AM or PM")
     args = parser.parse_args()
-    research_day = days_loading_check(3,args)
+    research_day = days_loading_check(1,args)
     # research_day = single_day_loading("2025-07-25",args)
     main(research_day,args)

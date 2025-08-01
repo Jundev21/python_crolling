@@ -17,12 +17,12 @@ def days_loading_check(days,args):
     if args.peak_time:
         print("피크타임 검색 시작")
         if args.peak_type == "AM":
-            print(f"피크타임 시간대 {pick_time_AM} { args.peak_type}")
+            print(f"피크타임 시간대 08:00:00 ~ 10:00:00 { args.peak_type}")
         elif args.peak_type == "PM":
             print(f"피크타임 시간대 {pick_time_PM} { args.peak_type}")
     else:
         print("일반 일일점검 검색 시작")
-    for day in range(days+1, 1, -1):
+    for day in range(days, 0, -1):
         from_yesterday_data = ""
         to_yesterday_data = ""
         change_day = current_data-timedelta(day)
