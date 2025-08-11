@@ -1,29 +1,22 @@
-import re
+import argparse
 import os
+import re
+import time
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from openpyxl.reader.excel import load_workbook
 from selenium import webdriver
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from excel import append_to_exisiting_excel_report, new_excel_report
-from selenium.webdriver import Keys
-import time
-import argparse
-from bs4 import BeautifulSoup
-from typing import Dict, List, Optional
-from datetime import datetime, timedelta
-import openpyxl
-from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
-from openpyxl.utils import get_column_letter
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-
 from config import region_config
-from util import login
+from excel import append_to_exisiting_excel_report, new_excel_report, daily_append_excel_report
 from util.days_loading_check import days_loading_check, single_day_loading
-from util.scroll_loading_check import scroll_loading_check, scroll_to_bottom
 
 TARGETS_CONFIG = [
     {
@@ -195,7 +188,11 @@ def create_horizontal_excel_report(all_results: Dict[str, Dict], filename: str, 
     full_path = os.path.join(a, filename)
 
     if is_peak_time:
-        new_excel_report.main(os.path.join(OUTPUT_DIR, filename),all_results,header_names,index,day_header)
+        peak_time_path = os.path.join(OUTPUT_DIR, filename)
+        if os.path.exists(peak_time_path):
+            daily_append_excel_report.main(peak_time_path, all_results, header_names ,index, day_header)
+        else:
+            new_excel_report.main(peak_time_path, all_results, header_names, index, day_header)
     elif os.path.exists(full_path):
         append_to_exisiting_excel_report.main(full_path, all_results, header_names ,index, day_header)
     else:
@@ -276,7 +273,11 @@ def main(research_days, args):
                         print("\nℹ️ 최종적으로 분석할 데이터가 없습니다.")
                     else:
                         yesterday = datetime.today()-timedelta(days=1)
-                        report_filename = f"{region["region"]}_GSS_Daily-report-{datetime.today().strftime('%Y-%m-%d')}.xlsx"
+
+                        if day.get("searching_single_date"):
+                            report_filename = f"{region["region"]}_GSS_Daily-report-{day["searching_single_date"]}.xlsx"
+                        else:
+                            report_filename = f"{region["region"]}_GSS_Daily-report-{datetime.today().strftime('%Y-%m-%d')}.xlsx"
 
                         if args.peak_time :
                             report_filename = f"{args.peak_type}_peak_time_" + report_filename
@@ -304,6 +305,6 @@ if __name__ == "__main__":
     parser.add_argument("--peak_time", required=False, help="Is it peak time")
     parser.add_argument("--peak_type", required=False, help="Is it AM or PM")
     args = parser.parse_args()
-    research_day = days_loading_check(1,args)
-    # research_day = single_day_loading("2025-07-25",args)
+    # research_day = days_loading_check(1,args)
+    research_day = single_day_loading("2025-08-09",args)
     main(research_day,args)
