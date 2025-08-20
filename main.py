@@ -211,7 +211,6 @@ def main(research_days, args):
     try:
         for idx, region in enumerate(region_config.region_config):
             driver.get(region['url'])
-            driver.set_window_size(1200, 1000)
 
             driver.find_element(By.XPATH, '//*[@id="pageContent"]/div[3]/div/div/div/div[2]/div/div[2]/a').click()
 
@@ -239,17 +238,17 @@ def main(research_days, args):
 
                     scroll_container = driver.find_element(By.CSS_SELECTOR, "#page-scrollbar")
 
-                    driver.execute_script("arguments[0].scrollTop = arguments[1]", scroll_container,500)
+                    driver.execute_script("arguments[0].scrollTop = arguments[1]", scroll_container,600)
 
 
-                    WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[1]/div/div[1]/div/main/div[3]/div/div/div/div/div/div/div[8]/div/section/div[3]/div/div[2]/div/div[1]/table')),
-                    )
-
-                    WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH,
-                                                        '/html/body/div[1]/div[1]/div/div[1]/div/main/div[3]/div/div/div/div/div/div/div[9]/div/section/div[3]/div/div[2]/div/div[1]/table'))
-                    )
+                    # WebDriverWait(driver, 10).until(
+                    #     EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[1]/div/div[1]/div/main/div[3]/div/div/div/div/div/div/div[8]/div/section/div[3]/div/div[2]/div/div[1]/table')),
+                    # )
+                    #
+                    # WebDriverWait(driver, 10).until(
+                    #     EC.presence_of_element_located((By.XPATH,
+                    #                                     '/html/body/div[1]/div[1]/div/div[1]/div/main/div[3]/div/div/div/div/div/div/div[9]/div/section/div[3]/div/div[2]/div/div[1]/table'))
+                    # )
 
                     time.sleep(5)
 
