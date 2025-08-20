@@ -241,14 +241,9 @@ def main(research_days, args):
                     driver.execute_script("arguments[0].scrollTop = arguments[1]", scroll_container,600)
 
 
-                    # WebDriverWait(driver, 10).until(
-                    #     EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[1]/div/div[1]/div/main/div[3]/div/div/div/div/div/div/div[8]/div/section/div[3]/div/div[2]/div/div[1]/table')),
-                    # )
-                    #
-                    # WebDriverWait(driver, 10).until(
-                    #     EC.presence_of_element_located((By.XPATH,
-                    #                                     '/html/body/div[1]/div[1]/div/div[1]/div/main/div[3]/div/div/div/div/div/div/div[9]/div/section/div[3]/div/div[2]/div/div[1]/table'))
-                    # )
+                    WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, '/html/body/div/div[1]/div/div/div/main/div[3]/div/div/div/div/div/div/div[8]/div/section')),
+                    )
 
                     time.sleep(5)
 
@@ -304,6 +299,6 @@ if __name__ == "__main__":
     parser.add_argument("--peak_time", required=False, help="Is it peak time")
     parser.add_argument("--peak_type", required=False, help="Is it AM or PM")
     args = parser.parse_args()
-    # research_day = days_loading_check(1,args)
-    research_day = single_day_loading("2025-08-09",args)
+    research_day = days_loading_check(1,args)
+    # research_day = single_day_loading("2025-08-09",args)
     main(research_day,args)
